@@ -1,7 +1,10 @@
+# Imports
 import tkinter as tk
 from tkinter import filedialog, messagebox
+from PIL import Image, ImageTk  
 import pandas as pd
 
+# File Processing Code
 def process_file():
     input_path = filedialog.askopenfilename(
         title="Select CSV File",
@@ -11,7 +14,6 @@ def process_file():
         return
 
     try:
-        # Try multiple encodings
         encodings = ['utf-8', 'latin1', 'cp1252']
         for encoding in encodings:
             try:
@@ -22,7 +24,6 @@ def process_file():
         else:
             raise ValueError("Could not decode file with standard encodings")
 
-        # Rest of your processing code remains the same...
         data_start = None
         for idx, row in df.iterrows():
             if str(row[0]) == "Order Id":
@@ -34,15 +35,27 @@ def process_file():
         
         main_data = pd.read_csv(input_path, skiprows=data_start, encoding=encoding)
         
-        payouts_data = []
+        columns_to_remove = ['Order Creation Time', 'Preferred Time', 'County', 'Payment Type', 'Location']
+        for col in columns_to_remove:
+            if col in main_data.columns:
+                main_data.drop(col, axis=1, inplace=True)
+        
+        last_rows = []
         for idx in range(len(df)-1, max(len(df)-10, -1), -1):
             row = df.iloc[idx]
             if not row.isnull().all():
-                payouts_data.append(row)
-                if len(payouts_data) >= 3:
+                last_rows.append(idx)
+                if len(last_rows) >= 3:
                     break
         
-        payouts_data.reverse()
+        if last_rows:
+            main_data = main_data.iloc[:-(len(last_rows))]
+        
+        payouts_data = []
+        for idx in last_rows:
+            row = df.iloc[idx]
+            payouts_data.append(row.dropna().tolist())
+        
         payouts_df = pd.DataFrame(payouts_data)
         
         save_path = filedialog.asksaveasfilename(
@@ -63,16 +76,28 @@ def process_file():
     except Exception as e:
         messagebox.showerror("Error", f"Processing failed:\n{str(e)}")
 
-# GUI code remains the same...
+
+# GUI Code
 root = tk.Tk()
 root.title("Vito's Report Processor")
-root.geometry("400x200")
+root.geometry("500x300") 
+
+try:
+    image = Image.open("logo.png")  
+    image = image.resize((200, 100), Image.LANCZOS)  
+    logo = ImageTk.PhotoImage(image)
+    
+    logo_label = tk.Label(root, image=logo)
+    logo_label.image = logo  
+    logo_label.pack(pady=10)
+except Exception as e:
+    print(f"Image not loaded: {e}")  
 
 tk.Label(
     root, 
     text="Vito's Restaurant Report Processor",
     font=("Arial", 14)
-).pack(pady=20)
+).pack(pady=5)
 
 tk.Button(
     root,
@@ -80,14 +105,14 @@ tk.Button(
     command=process_file,
     height=2,
     width=20,
-    bg="#4CAF50",
+    bg="#07ebd0",
     fg="white"
-).pack()
+).pack(pady=10)
 
 tk.Label(
     root,
-    text="Will create:\n1. Main order data\n2. Payouts section",
+    text="Will generate:\n1. Main order data\n2. Payouts section",
     font=("Arial", 10)
-).pack(pady=20)
+).pack(pady=10)
 
 root.mainloop()
