@@ -147,7 +147,7 @@ def process_file():
 
 # GUI Code (unchanged)
 root = tk.Tk()
-root.title("Vito's Report Processor")
+root.title("Constant Cuisine Report Generator")
 root.geometry("500x300") 
 
 try:
